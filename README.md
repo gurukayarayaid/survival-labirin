@@ -25,17 +25,23 @@ Android**, tanpa instal aplikasi.
 
 ---
 
-## 🌐 Cara 2: Upload ke GitHub Pages (main dari HP tanpa PC!)
+## 🌐 Cara 2: Main di GitHub Pages (tanpa PC, langsung dari HP!)
 
-Game bisa di-deploy ke **GitHub Pages** — murid tinggal buka tautan di browser
-HP, tanpa instalasi apa pun.
+Game **sudah live** di GitHub Pages — murid tinggal buka tautan di browser HP:
 
-1. Buat repository di github.com (misal `survival-labirin`), lalu push isi
-   folder ini (perintah lengkap ada di akhir README).
-2. Buka **Settings → Pages → Build and deployment → Source: GitHub Actions**
-   (sudah otomatis dipakai workflow `.github/workflows/deploy.yml`).
-3. Tunggu beberapa detik di tab **Actions** — setelah hijau, game hidup di
-   `https://<username-anda>.github.io/survival-labirin/`
+**https://gurukayarayaid.github.io/survival-labirin/**
+
+Repository: **https://github.com/gurukayarayaid/survival-labirin**
+
+- Sumber Pages: **branch `main`** (root) — sudah diatur, tidak perlu setup lagi.
+- Cara memperbarui: cukup `git push` dari komputer — beberapa detik kemudian
+  tautan di atas otomatis menampilkan versi terbaru.
+  > **Penting:** setiap perbaikan, naikkan penanda versi di tag `<script>/<link>`
+  > `index.html` (mis. `?v=20260825b`) agar HP murid tidak memakai file lama
+  > dari cache.
+- File `.github/workflows/deploy.yml` (opsional) untuk deploy via GitHub Actions
+  — butuh token GitHub ber-scope `workflow`. Cara branch di atas sudah cukup
+  tanpa itu.
 
 ### Dua mode permainan
 | | Mode **PC** (`python app.py`) | Mode **HP** (GitHub Pages) |
@@ -49,21 +55,20 @@ HP, tanpa instalasi apa pun.
 > Saran: di kelas, jalankan mode PC (skor bersama + admin), dan bagikan tautan
 > GitHub Pages untuk latihan di rumah.
 
-## 📤 Push ke GitHub (dari komputer Anda)
+## 📤 Push ke GitHub (dari komputer)
+
+Remote sudah terhubung ke `https://github.com/gurukayarayaid/survival-labirin.git`.
+Setiap kali ada perubahan:
 
 ```bash
-# 1) buat repo di github.com dulu (web), lalu:
 cd survival-labirin
-git init -b main
 git add -A
-git commit -m "Game Survival Labirin - SDN Semambang Jabon Sidorjo"
-git branch -M main
-git remote add origin https://github.com/<USERNAME-ANDA>/survival-labirin.git
-git push -u origin main
+git commit -m "keterANGAN perbaikan"
+git push
 ```
 
-Setelah itu **Settings → Pages → Source: GitHub Actions**. Tautan game:
-`https://<USERNAME-ANDA>.github.io/survival-labirin/`
+Beberapa detik setelah push, tautan GitHub Pages di atas menampilkan versi
+terbaru.
 
 ---
 
@@ -103,8 +108,7 @@ Buka di browser: **http://localhost:5000**
 
 Logo asli sudah terpasang di **`static/logo-sekolah.png`** (background transparan).
 Untuk mengganti lagi: letakkan file baru di folder `static/`, lalu ubah
-`src="/static/logo-sekolah.png"` di `static/index.html` (splash, beranda, dan
-icon di `<head>`).
+`src="static/logo-sekolah.png"` di `index.html` (splash, beranda, dan icon di `<head>`).
 
 ## 📚 Data & Backup
 
@@ -162,16 +166,18 @@ Waktu menjawab soal: `QTIME` (detik) di `static/js/app.js`.
 
 ```
 survival-labirin/
+├── index.html             # semua layar game (harus di ROOT agar Pages jalan)
 ├── app.py                 # backend Python (Flask) + 30 soal bawaan
 ├── requirements.txt
 ├── data.json              # dibuat otomatis saat pertama jalan
+├── 404.html               # halaman 404 GitHub Pages
 ├── README.md
 └── static/
-    ├── index.html         # semua layar game
     ├── logo-sekolah.png   # logo sekolah (transparan)
     ├── css/style.css
     └── js/
         ├── audio.js       # efek suara (Web Audio API)
+        ├── questions.js   # 30 soal bawaan (mode HP)
         ├── game.js        # mesin labirin, monster, render
         └── app.js         # navigasi, soal, sesi, admin
 ```
