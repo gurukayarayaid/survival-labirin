@@ -25,6 +25,48 @@ Android**, tanpa instal aplikasi.
 
 ---
 
+## 🌐 Cara 2: Upload ke GitHub Pages (main dari HP tanpa PC!)
+
+Game bisa di-deploy ke **GitHub Pages** — murid tinggal buka tautan di browser
+HP, tanpa instalasi apa pun.
+
+1. Buat repository di github.com (misal `survival-labirin`), lalu push isi
+   folder ini (perintah lengkap ada di akhir README).
+2. Buka **Settings → Pages → Build and deployment → Source: GitHub Actions**
+   (sudah otomatis dipakai workflow `.github/workflows/deploy.yml`).
+3. Tunggu beberapa detik di tab **Actions** — setelah hijau, game hidup di
+   `https://<username-anda>.github.io/survival-labirin/`
+
+### Dua mode permainan
+| | Mode **PC** (`python app.py`) | Mode **HP** (GitHub Pages) |
+|---|---|---|
+| Soal | dari `data.json`, **bisa CRUD via menu Admin** | 30 soal bawaan (fixed) |
+| Papan skor | **bersama** semua pemain | per HP (setiap murid punya skornya sendiri) |
+| Simpan sesi | di server (satu HP pun bisa pindah-pindah) | di HP masing-masing (localStorage) |
+| Menu Admin | ✅ aktif | 📡 info saja (butuh server) |
+
+> Mode dideteksi otomatis saat halaman dibuka — tidak perlu diatur apa pun.
+> Saran: di kelas, jalankan mode PC (skor bersama + admin), dan bagikan tautan
+> GitHub Pages untuk latihan di rumah.
+
+## 📤 Push ke GitHub (dari komputer Anda)
+
+```bash
+# 1) buat repo di github.com dulu (web), lalu:
+cd survival-labirin
+git init -b main
+git add -A
+git commit -m "Game Survival Labirin - SDN Semambang Jabon Sidorjo"
+git branch -M main
+git remote add origin https://github.com/<USERNAME-ANDA>/survival-labirin.git
+git push -u origin main
+```
+
+Setelah itu **Settings → Pages → Source: GitHub Actions**. Tautan game:
+`https://<USERNAME-ANDA>.github.io/survival-labirin/`
+
+---
+
 ## ▶️ Cara Menjalankan (di PC/Laptop)
 
 ```bash

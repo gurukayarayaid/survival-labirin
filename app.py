@@ -266,10 +266,11 @@ def _require_admin(f):
 # --------------------------------------------------------------------- pages --
 @app.get("/")
 def index():
-    return send_from_directory(STATIC_DIR, "index.html")
+    # index.html di ROOT repo — agar identik dengan struktur GitHub Pages
+    return send_from_directory(BASE_DIR, "index.html")
 
 
-@app.get("/healthz")
+@app.get("/api/healthz")
 def healthz():
     return jsonify(ok=True)
 

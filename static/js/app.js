@@ -50,6 +50,116 @@ async function adminApi(path, opts) {
   return d;
 }
 
+/* ============================================================
+   STORE — abstraksi data
+   mode 'server' : Flask Python berjalan (fitur penuh:
+                   CRUD soal, skor bersama, sesi bersama)
+   mode 'local'  : GitHub Pages / tanpa server (mode HP:
+                   soal bawaan, sesi & skor per perangkat)
+   ============================================================ */
+const Store = {
+  mode: 'local',
+  _initPromise: null,
+
+  init() {
+    if (!this._initPromise) this._initPromise = this._detect();
+    return this._initPromise;
+  },
+
+  async _detect() {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 2500);
+      const r = await fetch('api/healthz', { signal: ctrl.signal });
+      clearTimeout(t);
+      const ct = r.headers.get('content-type') || '';
+      this.mode = (r.ok && ct.indexOf('json') !== -1) ? 'server' : 'local';
+    } catch (e) {
+      this.mode = 'local';
+    }
+    return this.mode;
+  },
+
+  /* ---- soal ---- */
+  async loadQuestions() {
+    if (this.mode === 'server') {
+      const d = await api('api/questions/public');
+      return d.questions || [];
+    }
+    return typeof DEFAULT_QUESTIONS !== 'undefined' ? DEFAULT_QUESTIONS : [];
+  },
+
+  /* ---- sesi ---- */
+  async getSession(name) {
+    const n = normName(name);
+    if (!n) return null;
+    if (this.mode === 'server') {
+      const d = await api('api/sessions/' + encodeURIComponent(n));
+      return d.found ? d.session : null;
+    }
+    const raw = localStorage.getItem('ss_session_' + n.toLowerCase());
+    try { return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+  },
+
+  saveSession(name, payload) {
+    const n = normName(name);
+    if (!n) return;
+    if (this.mode === 'server') {
+      api('api/sessions/' + encodeURIComponent(n), {
+        method: 'POST', body: JSON.stringify(payload),
+      }).catch(() => {});
+      return;
+    }
+    payload.name = n;
+    payload.updatedAt = Date.now();
+    try {
+      localStorage.setItem('ss_session_' + n.toLowerCase(), JSON.stringify(payload));
+    } catch (e) { /* storage penuh — abaikan */ }
+  },
+
+  deleteSession(name) {
+    const n = normName(name);
+    if (!n) return Promise.resolve();
+    if (this.mode === 'server') {
+      return api('api/sessions/' + encodeURIComponent(n), { method: 'DELETE' }).catch(() => {});
+    }
+    localStorage.removeItem('ss_session_' + n.toLowerCase());
+    return Promise.resolve();
+  },
+
+  /* ---- papan skor ---- */
+  async getLeaderboard() {
+    if (this.mode === 'server') {
+      const d = await api('api/leaderboard');
+      return d.leaderboard || [];
+    }
+    const raw = localStorage.getItem('ss_leaderboard');
+    let rows = [];
+    try { rows = raw ? JSON.parse(raw) : []; } catch (e) { rows = []; }
+    rows.sort((a, b) => (b.score - a.score) || (b.stage - a.stage));
+    return rows.slice(0, 20);
+  },
+
+  async submitScore(entry) {
+    if (this.mode === 'server') {
+      const d = await api('api/leaderboard', { method: 'POST', body: JSON.stringify(entry) });
+      return d.rank;
+    }
+    const raw = localStorage.getItem('ss_leaderboard');
+    let rows = [];
+    try { rows = raw ? JSON.parse(raw) : []; } catch (e) { rows = []; }
+    entry.time = Date.now();
+    rows.push(entry);
+    rows.sort((a, b) => (b.score - a.score) || (b.stage - a.stage));
+    rows = rows.slice(0, 100);
+    try { localStorage.setItem('ss_leaderboard', JSON.stringify(rows)); } catch (e) {}
+    const rank = 1 + rows.filter(r =>
+      (r.score > entry.score) || (r.score === entry.score && r.stage > entry.stage)
+    ).length;
+    return rank;
+  },
+};
+
 let toastT = null;
 function toast(msg) {
   const t = $('#toast');
@@ -137,10 +247,10 @@ async function checkResumeBtn() {
   const btn = $('#btnContinue');
   if (!App.name) { btn.classList.add('hidden'); return; }
   try {
-    const d = await api('/api/sessions/' + encodeURIComponent(App.name));
-    if (d.found) {
+    const s = await Store.getSession(App.name);
+    if (s) {
       btn.classList.remove('hidden');
-      $('#contInfo').textContent = 'Level ' + d.session.stage + ' • Skor ' + d.session.score + ' • ' + d.session.name;
+      $('#contInfo').textContent = 'Level ' + s.stage + ' • Skor ' + s.score + ' • ' + s.name;
     } else btn.classList.add('hidden');
   } catch (e) { btn.classList.add('hidden'); }
 }
@@ -163,11 +273,11 @@ function checkNameInput() {
     }
     App.name = n;
     try {
-      const d = await api('/api/sessions/' + encodeURIComponent(n));
-      if (d.found) {
-        $('#newBox').classList.add('hidden');
-        $('#resumeBox').classList.remove('hidden');
-        $('#resumeInfo').textContent = 'Oh! Petualangan ' + d.session.name + ' tersimpan di Level ' + d.session.stage + ' (skor ' + d.session.score + ').';
+      const d = await Store.getSession(n);
+      if (d) {
+      $('#newBox').classList.add('hidden');
+      $('#resumeBox').classList.remove('hidden');
+      $('#resumeInfo').textContent = 'Oh! Petualangan ' + d.name + ' tersimpan di Level ' + d.stage + ' (skor ' + d.score + ').';
       } else {
         $('#newBox').classList.remove('hidden');
         $('#resumeBox').classList.add('hidden');
@@ -193,7 +303,7 @@ function bindName() {
     const n = normName($('#inpName').value) || App.name;
     if (!n) return;
     if (await confirmBox('Hapus semua progress ' + n + '?')) {
-      try { await api('/api/sessions/' + encodeURIComponent(n), { method: 'DELETE' }); } catch (e) {}
+      try { await Store.deleteSession(n); } catch (e) {}
       toast('Progress dihapus 🗑️');
       checkNameInput();
     }
@@ -208,7 +318,7 @@ function startNew() {
   App.name = n;
   localStorage.setItem('ss_name', n);
   App.S = { name: n, stage: 1, lives: 3, score: 0, coinsGot: 0, used: [], seed: (Math.random() * 1e9) | 0 };
-  try { api('/api/sessions/' + encodeURIComponent(n), { method: 'DELETE' }).catch(() => {}); } catch (e) {}
+  Store.deleteSession(n);
   saveSession();
   go('game');
   Game.setupStage(1, App.S.seed, null);
@@ -219,9 +329,8 @@ function startNew() {
 async function resumeSession() {
   if (!App.name) { go('name'); onNameScreen(); return; }
   try {
-    const d = await api('/api/sessions/' + encodeURIComponent(App.name));
-    if (!d.found) { toast('Sesi tidak ditemukan, ayo mulai baru!'); go('name'); onNameScreen(); return; }
-    const s = d.session;
+    const s = await Store.getSession(App.name);
+    if (!s) { toast('Sesi tidak ditemukan, ayo mulai baru!'); go('name'); onNameScreen(); return; }
     App.S = {
       name: s.name, stage: s.stage, lives: s.lives, score: s.score,
       coinsGot: s.coins, used: s.usedQuestions || [],
@@ -236,13 +345,10 @@ async function resumeSession() {
 
 function saveSession() {
   if (!App.S) return;
-  api('/api/sessions/' + encodeURIComponent(App.S.name), {
-    method: 'POST',
-    body: JSON.stringify({
-      stage: App.S.stage, lives: App.S.lives, score: Game.score,
-      coins: App.S.coinsGot, seed: App.S.seed, usedQuestions: App.S.used,
-    }),
-  }).catch(() => {});
+  Store.saveSession(App.S.name, {
+    stage: App.S.stage, lives: App.S.lives, score: Game.score,
+    coins: App.S.coinsGot, seed: App.S.seed, usedQuestions: App.S.used,
+  });
 }
 
 /* ---------------- HUD ---------------- */
@@ -293,8 +399,7 @@ let qRemaining = 0;
 async function ensureQuestions() {
   if (App.questions.length) return;
   try {
-    const d = await api('/api/questions/public');
-    App.questions = d.questions || [];
+    App.questions = await Store.loadQuestions();
   } catch (e) { App.questions = []; }
 }
 
@@ -484,14 +589,10 @@ function showResult(win) {
   Game.paused = true;
   Game.state = 'idle';
   const score = Game.score, stage = Game.stage, coins = Game.coinsGot;
-  if (App.S) {
-    try { api('/api/sessions/' + encodeURIComponent(App.S.name), { method: 'DELETE' }).catch(() => {}); } catch (e) {}
-  }
+  if (App.S) Store.deleteSession(App.S.name).catch(() => {});
   if (App.name) {
-    api('/api/leaderboard', {
-      method: 'POST',
-      body: JSON.stringify({ name: App.name, score, stage, completed: win }),
-    }).then(d => { $('#resRank').textContent = d.rank ? '#' + d.rank : '—'; })
+    Store.submitScore({ name: App.name, score, stage, completed: win })
+      .then(rank => { $('#resRank').textContent = rank ? '#' + rank : '—'; })
       .catch(() => { $('#resRank').textContent = '—'; });
   }
   $('#resEmoji').textContent = win ? '🏆' : '💪';
@@ -519,8 +620,7 @@ async function loadLb() {
   const list = $('#lbList');
   list.innerHTML = '<div class="lb-empty">Memuat skor...</div>';
   try {
-    const d = await api('/api/leaderboard');
-    const rows = d.leaderboard || [];
+    const rows = await Store.getLeaderboard();
     if (!rows.length) {
       list.innerHTML = '<div class="lb-empty">🏆<br>Belum ada skor.<br>Jadilah yang pertama!</div>';
       return;
@@ -555,7 +655,15 @@ function bindLb() {
 let adminQs = [];
 
 function refreshAdminUI() {
+  if (Store.mode === 'local') {
+    $('#adminOffline').classList.remove('hidden');
+    $('#adminLogin').classList.add('hidden');
+    $('#adminMain').classList.add('hidden');
+    $('#adminBadge').classList.add('hidden');
+    return;
+  }
   const logged = !!App.adminToken;
+  $('#adminOffline').classList.add('hidden');
   $('#adminLogin').classList.toggle('hidden', logged);
   $('#adminMain').classList.toggle('hidden', !logged);
   $('#adminBadge').classList.toggle('hidden', !logged);
@@ -589,7 +697,7 @@ function bindAdmin() {
     const o = $('#pwOld').value, n1 = $('#pwNew').value, n2 = $('#pwNew2').value;
     if (n1 !== n2) { toast('Sandi baru tidak sama ✋'); return; }
     try {
-      await adminApi('/api/admin/password', { method: 'POST', body: JSON.stringify({ current: o, new: n1 }) });
+      await adminApi('api/admin/password', { method: 'POST', body: JSON.stringify({ current: o, new: n1 }) });
       $('#pwForm').classList.add('hidden');
       SFX.sfx.correct();
       toast('Kata sandi admin diganti 🔑');
@@ -600,7 +708,7 @@ function bindAdmin() {
 async function adminLogin() {
   const pw = $('#adminPw').value;
   try {
-    const d = await api('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw }) });
+    const d = await api('api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw }) });
     App.adminToken = d.token;
     localStorage.setItem('ss_admin', d.token);
     SFX.sfx.correct();
@@ -615,7 +723,7 @@ async function adminLogin() {
 async function loadQList() {
   const list = $('#qList');
   try {
-    const d = await adminApi('/api/questions');
+    const d = await adminApi('api/questions');
     adminQs = d.questions || [];
     $('#qCount').textContent = adminQs.length + ' soal';
     list.innerHTML = '';
@@ -653,7 +761,7 @@ async function loadQList() {
 async function deleteQ(q) {
   if (!(await confirmBox('Hapus soal ini?\n"' + q.question.slice(0, 70) + '..."'))) return;
   try {
-    await adminApi('/api/questions/' + q.id, { method: 'DELETE' });
+    await adminApi('api/questions/' + q.id, { method: 'DELETE' });
     SFX.sfx.tap();
     toast('Soal dihapus 🗑️');
     loadQList();
@@ -693,10 +801,10 @@ async function saveQForm() {
   const editId = $('#qForm').dataset.editId;
   try {
     if (editId) {
-      await adminApi('/api/questions/' + editId, { method: 'PUT', body: JSON.stringify(body) });
+      await adminApi('api/questions/' + editId, { method: 'PUT', body: JSON.stringify(body) });
       toast('Soal diperbarui ✅');
     } else {
-      await adminApi('/api/questions', { method: 'POST', body: JSON.stringify(body) });
+      await adminApi('api/questions', { method: 'POST', body: JSON.stringify(body) });
       toast('Soal ditambahkan ✅');
     }
     SFX.sfx.correct();
@@ -781,7 +889,7 @@ function bindScrollGuard() {
 }
 
 /* ---------------- init ---------------- */
-function init() {
+async function init() {
   Fx.init();
   bindSplash();
   bindQuestion();
@@ -793,6 +901,12 @@ function init() {
   bindPause();
   bindResult();
   bindScrollGuard();
+
+  // deteksi mode: server Python ada, atau mode HP (GitHub Pages)
+  await Store.init();
+  if (Store.mode === 'local') {
+    setTimeout(() => toast('📱 Mode HP: progres tersimpan di HP ini. Untuk skor bersama, jalankan di PC (python app.py).'), 1200);
+  }
 
   // muat bank soal
   ensureQuestions().catch(() => {});
