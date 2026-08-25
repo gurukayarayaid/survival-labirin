@@ -323,7 +323,7 @@ function startNew() {
   go('game');
   Game.setupStage(1, App.S.seed, null);
   SFX.sfx.stage();
-  banner('LEVEL 1 — MULAI! 🏃', 'Hindari 👾, kumpulkan 🪙, cari 🌀!');
+  banner('LEVEL 1 — MULAI! 🏃', 'Tahan tombol panah / usap labirin. Cari 🌀!');
 }
 
 async function resumeSession() {
@@ -544,6 +544,7 @@ function openPause() {
   if (App.activeScreen !== 'game' || Game.state !== 'playing' || !$('#pauseov').classList.contains('hidden')) return;
   Game.paused = true;
   Game.holdDir = null;
+  Game._pressed.clear();
   $('#pauseInfo').textContent = 'Level ' + Game.stage + ' • Skor ' + Game.score + ' • Nyawa ' + Game.lives;
   $('#pauseov').classList.remove('hidden');
   SFX.sfx.tap();
@@ -820,16 +821,25 @@ async function saveQForm() {
 function bindGameInput() {
   const cv = $('#maze');
 
-  // d-pad: tahan untuk jalan terus
+  // d-pad: Pointer Events (sentuh + mouse, multi-jari aman)
+  // ketuk singkat = 1 langkah; tahan = jalan terus
   $$('#dpad .dkey').forEach(k => {
     const dir = k.dataset.dir;
-    const on = e => { e.preventDefault(); k.classList.add('pressed'); Game.setHold(dir); };
-    const off = e => { e.preventDefault(); k.classList.remove('pressed'); if (Game.holdDir === dir) Game.clearHold(); };
-    k.addEventListener('touchstart', on, { passive: false });
-    k.addEventListener('touchend', off, { passive: false });
-    k.addEventListener('touchcancel', off, { passive: false });
-    k.addEventListener('mousedown', on);
-    window.addEventListener('mouseup', off);
+    const down = e => {
+      e.preventDefault();
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      try { k.setPointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
+      k.classList.add('pressed');
+      Game.press(dir);
+    };
+    const up = e => {
+      e.preventDefault();
+      k.classList.remove('pressed');
+      Game.release(dir);
+    };
+    k.addEventListener('pointerdown', down);
+    window.addEventListener('pointerup', up);
+    k.addEventListener('pointercancel', up);
     k.addEventListener('contextmenu', e => e.preventDefault());
   });
 
@@ -860,11 +870,11 @@ function bindGameInput() {
   };
   window.addEventListener('keydown', e => {
     const d = km[e.code];
-    if (d) { e.preventDefault(); Game.setHold(d); }
+    if (d) { e.preventDefault(); Game.press(d); }
   });
   window.addEventListener('keyup', e => {
     const d = km[e.code];
-    if (d) Game.clearHold();
+    if (d) Game.release(d);
   });
 }
 

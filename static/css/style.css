@@ -230,6 +230,13 @@ button{ font-family:inherit; cursor:pointer; touch-action:manipulation; }
   font-size:23px; display:flex; align-items:center; justify-content:center;
   box-shadow:0 4px 0 rgba(0,0,0,.28);
   transition:transform .06s, background .06s;
+  touch-action:none;
+  -webkit-user-select:none; user-select:none;
+  -webkit-touch-callout:none;
+}
+.dpad-hint{
+  text-align:center; font-size:10.5px; font-weight:800;
+  color:rgba(255,255,255,.75); padding:2px 8px 4px;
 }
 .dkey.pressed{ background:var(--teal2); color:#fff; transform:scale(.93); box-shadow:0 1px 0 rgba(0,0,0,.28); }
 .dkey[data-dir="n"]{ grid-area:1/2; }

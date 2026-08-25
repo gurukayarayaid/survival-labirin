@@ -104,7 +104,7 @@ const Game = {
   lives: 3, score: 0,
   timeMax: 50, timeLeft: 50,
   state: 'idle', paused: false,
-  invuln: 0, holdDir: null, _holdUntil: 0,
+  invuln: 0, holdDir: null, _holdUntil: 0, _pressed: new Set(), _pressT: 0,
   playerAcc: 0, popups: [], _flash: 0, _lastSec: 99,
   STEP: 0.14,
   cb: {},
@@ -123,6 +123,10 @@ const Game = {
     this.seed = seed;
     this.rng = mulberry32(((seed ^ 0x9E3779B9) >>> 0) + stage * 101);
     this.cells = genMaze(this.cols, this.rows, this.rng);
+    // titik mulai dijamin punya 2 arah terbuka (kanan & bawah)
+    // supaya pemain langsung bisa bergerak ke mana pun ia menekan
+    if (this.cols > 1) { this.cells[0][0].e = false; this.cells[0][1].w = false; }
+    if (this.rows > 1) { this.cells[0][0].s = false; this.cells[1][0].n = false; }
     this.px = 0; this.py = 0; this.safeX = 0; this.safeY = 0; this.facing = 1;
 
     // koin
@@ -172,9 +176,31 @@ const Game = {
     this.paused = false;
   },
 
-  setHold(d) { if (this.state === 'playing' && !this.paused) this.holdDir = d; },
-  clearHold() { this.holdDir = null; },
-  queueStep(d) { this.holdDir = d; this._holdUntil = performance.now() + 260; },
+  /* input arah:
+     press/release = tombol D-pad / keyboard (tahan = jalan terus)
+     queueStep     = usap di labirin (1 arah per usapan)
+     Ketukan singkat tetap menghasilkan 1 langkah (TAP_GRACE). */
+  press(d) {
+    if (this.state !== 'playing' || this.paused) return;
+    if (this._pressed.size === 0) this._pressT = performance.now();
+    this._pressed.add(d);
+    this.holdDir = d;
+  },
+  release(d) {
+    this._pressed.delete(d);
+    if (this._pressed.size === 0 && this.holdDir) {
+      const now = performance.now();
+      const dur = now - (this._pressT || now);
+      // ketukan singkat (<280ms) = selesaikan 1 langkah;
+      // lepas setelah tahan lama = berhenti segera
+      this._holdUntil = dur < 280 ? now + 220 : now;
+    }
+  },
+  queueStep(d) {
+    if (this.state !== 'playing' || this.paused) return;
+    this.holdDir = d;
+    this._holdUntil = performance.now() + 260;
+  },
 
   update(dt) {
     if (this.state !== 'playing') return;
@@ -513,7 +539,12 @@ function _loop(t) {
   _lastT = t;
   if (!Game.paused) {
     Game.update(dt);
-    if (t > Game._holdUntil && Game._holdUntil) Game.holdDir = null;
+    // arah aktif: tombol yang sedang ditekan (tahan), atau grace dari ketukan/usapan
+    if (Game._pressed.size) {
+      Game.holdDir = [...Game._pressed].pop();
+    } else if (Game.holdDir && t > Game._holdUntil) {
+      Game.holdDir = null;
+    }
   }
   const scr = (typeof App !== 'undefined') ? App.activeScreen : null;
   if (scr === 'game' && Game.state !== 'idle') {
