@@ -134,9 +134,15 @@ Waktu menjawab soal: `QTIME` (detik) di `static/js/app.js`.
 
 ## 🕹️ Kontrol
 
-- **Tombol panah** di bawah layar — tahan untuk jalan terus.
+- **Tombol panah** di bawah layar — **ketuk = 1 langkah**, **tahan = jalan terus**.
+  (Input ganda touch+mouse: tombol menyala teal saat ditekan.)
 - **Usap (swipe)** di atas labirin — satu arah per usapan.
 - **Keyboard** (untuk uji di PC): panah / WASD.
+
+> Catatan deploy: setiap perbaikan, tambahkan penanda versi baru di tag
+> `<script>/<link>` di `index.html` (mis. `?v=20260825b`) agar browser HP
+> tidak memakai file lama dari cache. Halaman utama dikirim
+> `Cache-Control: no-cache, must-revalidate`.
 
 ---
 
