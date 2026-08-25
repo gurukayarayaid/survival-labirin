@@ -239,6 +239,7 @@ button{ font-family:inherit; cursor:pointer; touch-action:manipulation; }
   color:rgba(255,255,255,.75); padding:2px 8px 4px;
 }
 .dkey.pressed{ background:var(--teal2); color:#fff; transform:scale(.93); box-shadow:0 1px 0 rgba(0,0,0,.28); }
+.dkey:active{ background:var(--teal2); color:#fff; transform:scale(.93); box-shadow:0 1px 0 rgba(0,0,0,.28); }
 .dkey[data-dir="n"]{ grid-area:1/2; }
 .dkey[data-dir="w"]{ grid-area:2/1; }
 .dkey[data-dir="e"]{ grid-area:2/3; }

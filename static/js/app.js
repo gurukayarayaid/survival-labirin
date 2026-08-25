@@ -545,6 +545,7 @@ function openPause() {
   Game.paused = true;
   Game.holdDir = null;
   Game._pressed.clear();
+  if (window.__resetDpad) window.__resetDpad();
   $('#pauseInfo').textContent = 'Level ' + Game.stage + ' • Skor ' + Game.score + ' • Nyawa ' + Game.lives;
   $('#pauseov').classList.remove('hidden');
   SFX.sfx.tap();
@@ -821,27 +822,53 @@ async function saveQForm() {
 function bindGameInput() {
   const cv = $('#maze');
 
-  // d-pad: Pointer Events (sentuh + mouse, multi-jari aman)
+  // d-pad: input GANDA touch + mouse.
+  // Dipilih dibanding Pointer Events karena beberapa browser HP lama &
+  // WebView (Chrome tab-in-app, browser bawaan Android versi lama) tidak
+  // mendukung Pointer Events → tombol jadi "mati". Touch event didukung
+  // semua browser HP; mouse untuk desktop.
   // ketuk singkat = 1 langkah; tahan = jalan terus
   $$('#dpad .dkey').forEach(k => {
     const dir = k.dataset.dir;
-    const down = e => {
-      e.preventDefault();
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      try { k.setPointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
+    let down = false;
+    let lastTouch = 0;
+
+    const start = e => {
+      // abaikan "mouse palsu" yang muncul setelah sentuhan (anti ganda)
+      if (e.type === 'mousedown' && Date.now() - lastTouch < 700) return;
+      if (e.type === 'mousedown' && e.button !== 0) return;
+      if (down) return;
+      down = true;
+      try { e.preventDefault(); } catch (err) { /* abaikan */ }
       k.classList.add('pressed');
       Game.press(dir);
     };
-    const up = e => {
-      e.preventDefault();
+    const stop = e => {
+      if (!down) return;
+      down = false;
+      try { e.preventDefault(); } catch (err) { /* abaikan */ }
       k.classList.remove('pressed');
       Game.release(dir);
     };
-    k.addEventListener('pointerdown', down);
-    window.addEventListener('pointerup', up);
-    k.addEventListener('pointercancel', up);
+
+    // sentuh (input utama di HP)
+    k.addEventListener('touchstart', e => { lastTouch = Date.now(); start(e); }, { passive: false });
+    k.addEventListener('touchend', stop, { passive: false });
+    k.addEventListener('touchcancel', stop, { passive: false });
+    // mouse (desktop / komputer)
+    k.addEventListener('mousedown', start);
+    k.addEventListener('mouseleave', stop);
+    window.addEventListener('mouseup', stop);
+    // menu kanan saat tahan lama di layar sentuh
     k.addEventListener('contextmenu', e => e.preventDefault());
+    k._resetInput = () => {
+      if (down) { down = false; k.classList.remove('pressed'); }
+      Game.release(dir);
+    };
   });
+
+  // reset semua tombol saat jeda / layar berubah (anti tombol "nyangkut")
+  window.__resetDpad = () => $$('#dpad .dkey').forEach(k => k._resetInput && k._resetInput());
 
   // usap di atas labirin
   let sw = null;

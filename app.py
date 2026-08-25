@@ -266,8 +266,12 @@ def _require_admin(f):
 # --------------------------------------------------------------------- pages --
 @app.get("/")
 def index():
-    # index.html di ROOT repo — agar identik dengan struktur GitHub Pages
-    return send_from_directory(BASE_DIR, "index.html")
+    # index.html di ROOT repo — agar identik dengan struktur GitHub Pages.
+    # no-cache: HP selalu cek HTML terbaru (versi ?v= di script/CSS berganti
+    # tiap perbaikan → file JS baru langsung terunduh, tak kena cache lama).
+    resp = send_from_directory(BASE_DIR, "index.html", max_age=0)
+    resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return resp
 
 
 @app.get("/api/healthz")
