@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Data runtime (dibuat otomatis oleh app.py saat pertama kali jalan)
+data.json
+data.json.tmp
+server.log
+
+# Sistem
+.DS_Store
+Thumbs.db

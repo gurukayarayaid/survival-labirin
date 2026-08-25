@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B3C5D">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Game Survival Labirin — SDN Semambung Jabon</title>
+<link rel="icon" href="/static/logo-sekolah.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ================= SPLASH ================= -->
+  <section class="screen active" id="scr-splash">
+    <div class="splash-bg" aria-hidden="true">
+      <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
+    </div>
+    <div class="splash-inner">
+      <div class="splash-logo"><img src="/static/logo-sekolah.png" alt="Logo Sekolah"></div>
+      <h1 class="splash-title">GAME <span>SURVIVAL</span></h1>
+      <p class="splash-sub">SD NEGERI SEMAMBUNG JABON SIDAORJO</p>
+      <p class="splash-teacher">AGUK RUDIANTO,S.Pd.</p>
+      <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+      <p class="splash-hint">👆 Sentuh layar untuk mulai</p>
+    </div>
+  </section>
+
+  <!-- ================= HOME ================= -->
+  <section class="screen" id="scr-home">
+    <div class="home-top">
+      <img class="home-logo" src="/static/logo-sekolah.png" alt="Logo Sekolah">
+      <h1 class="game-title">GAME <span>SURVIVAL</span></h1>
+      <p class="school-name">SD Negeri Semambung Jabon Sidorjo</p>
+    </div>
+    <div class="home-menu">
+      <button id="btnPlay" class="btn big primary">🚀 <span><b>MULAI PETUALANGAN</b><small>Lolos dari labirin &amp; jawab soal Sidorjo</small></span></button>
+      <button id="btnContinue" class="btn big hidden">⏯️ <span><b>LANJUTKAN</b><small id="contInfo"></small></span></button>
+      <div class="home-grid">
+        <button id="btnScore" class="btn card-btn"><span class="ico">🏆</span><span>Papan Skor</span></button>
+        <button id="btnFitur" class="btn card-btn"><span class="ico">🧩</span><span>Fitur</span></button>
+        <button id="btnAdmin" class="btn card-btn"><span class="ico">🛠️</span><span>Admin</span></button>
+        <button id="btnSound" class="btn card-btn"><span class="ico" id="sndIco">🔊</span><span id="sndLabel">Suara</span></button>
+      </div>
+    </div>
+    <p class="foot">Dibuat dengan ❤️ untuk murid SD Sidorjo</p>
+  </section>
+
+  <!-- ================= NAMA ================= -->
+  <section class="screen" id="scr-name">
+    <div class="name-card">
+      <h2>Hai, Petualang! 👋</h2>
+      <p class="sub">Siapa namamu? Tuliskan di bawah ya.</p>
+      <input id="inpName" type="text" maxlength="16" placeholder="Ketik namamu di sini..." autocomplete="off" autocapitalize="words" spellcheck="false">
+      <div id="newBox">
+        <button id="btnStart" class="btn big primary">🎮 Mulai Petualangan</button>
+      </div>
+      <div id="resumeBox" class="hidden">
+        <p class="sub" id="resumeInfo">Oh! Kamu punya petualangan tersimpan.</p>
+        <div class="row">
+          <button id="btnResume" class="btn primary">⏯️ Lanjutkan</button>
+          <button id="btnRestart" class="btn ghost">🔄 Mulai Baru</button>
+        </div>
+        <button id="btnDelete" class="link">🗑️ Hapus progress lama</button>
+      </div>
+    </div>
+    <button id="btnBackName" class="link">← Kembali</button>
+  </section>
+
+  <!-- ================= GAME ================= -->
+  <section class="screen" id="scr-game">
+    <div class="hud">
+      <div class="hud-row">
+        <div class="hud-left">
+          <span class="hud-chip" id="hudStage">Level 1</span>
+          <span class="hud-hearts" id="hudLives">❤️❤️❤️</span>
+        </div>
+        <div class="hud-right">
+          <span class="hud-chip" id="hudScore">0</span>
+          <span class="hud-chip coin" id="hudCoins">🪙 0</span>
+          <button id="btnPause" class="icon-btn" aria-label="Jeda">⏸</button>
+        </div>
+      </div>
+      <div class="timebar"><div id="timeFill"></div><span class="ttime" id="timeNum">50</span></div>
+    </div>
+    <div id="mazeWrap">
+      <canvas id="maze"></canvas>
+    </div>
+    <div class="dpad" id="dpad">
+      <button class="dkey" data-dir="n" aria-label="Atas">▲</button>
+      <button class="dkey" data-dir="w" aria-label="Kiri">◀</button>
+      <div class="dcenter">🧭</div>
+      <button class="dkey" data-dir="e" aria-label="Kanan">▶</button>
+      <button class="dkey" data-dir="s" aria-label="Bawah">▼</button>
+    </div>
+  </section>
+
+  <!-- ================= PAPAN SKOR ================= -->
+  <section class="screen screen-dark" id="scr-lb">
+    <header class="shead">
+      <button class="icon-btn back" data-back="home" aria-label="Kembali">←</button>
+      <h2>🏆 Papan Skor</h2>
+      <button id="btnLbRefresh" class="icon-btn" style="margin-left:auto" aria-label="Muat ulang">🔄</button>
+    </header>
+    <div id="lbList" class="pane lblist"></div>
+  </section>
+
+  <!-- ================= FITUR ================= -->
+  <section class="screen screen-dark" id="scr-fitur">
+    <header class="shead">
+      <button class="icon-btn back" data-back="home" aria-label="Kembali">←</button>
+      <h2>🧩 Fitur Game</h2>
+    </header>
+    <div class="pane fitur-list">
+      <div class="fcard"><span class="fico">🧭</span><div><h4>Cara Bermain</h4><p>Gunakan tombol panah di layar (tahan untuk jalan terus) atau <b>usap layar labirin</b>. Kumpulkan koin, hindari monster 👾, dan capai gerbang pelarian 🌀 sebelum waktu habis!</p></div></div>
+      <div class="fcard"><span class="fico">🧠</span><div><h4>Tebak Soal Sidorjo</h4><p>Lolos tiap level, jawab soal tentang <b>sejarah, kearifan lokal, dan budaya</b> masyarakat Sidoarjo. Jawaban benar bernilai <b>+50 poin</b> dan dapat penjelasan seru!</p></div></div>
+      <div class="fcard"><span class="fico">💾</span><div><h4>Simpan Otomatis</h4><p>Progres game disimpan otomatis. Kalau keluar, tinggal masukkan nama lagi lalu pilih <b>Lanjutkan</b> — petualanganmu terus dari level yang sama.</p></div></div>
+      <div class="fcard"><span class="fico">🏆</span><div><h4>Papan Skor</h4><p>Berusaha masuk 10 besar! Skor tertinggi dari semua murid tampil di papan skor, lengkap dengan medali 🥇🥈🥉.</p></div></div>
+      <div class="fcard"><span class="fico">🎵</span><div><h4>Efek Suara &amp; Getar</h4><p>Suara koin, jawaban benar/salah, level, dan kemenangan — plus getaran HP saat tertinggal. Suara bisa dimatikan dari tombol di beranda.</p></div></div>
+      <div class="fcard"><span class="fico">📱</span><div><h4>Dirancang untuk HP</h4><p>Layar pas di HP Android, full sentuhan, dan <b>tanpa pull-to-refresh</b> saat bergeser. Aman dimainkan satu per satu bergiliran di kelas.</p></div></div>
+      <div class="fcard"><span class="fico">🛠️</span><div><h4>Menu Admin Guru</h4><p>Guru dapat menambah, mengubah, mencoba, dan menghapus soal kapan saja lewat menu <b>Admin</b>.</p></div></div>
+    </div>
+  </section>
+
+  <!-- ================= ADMIN ================= -->
+  <section class="screen screen-dark" id="scr-admin">
+    <header class="shead">
+      <button class="icon-btn back" data-back="home" aria-label="Kembali">←</button>
+      <h2>🛠️ Admin Guru</h2>
+      <span id="adminBadge" class="chip hidden" style="margin-left:auto">✔ Admin</span>
+    </header>
+
+    <div id="adminLogin" class="login-card">
+      <p>Masuk untuk mengelola soal (sejarah, kearifan lokal &amp; budaya Sidorjo).</p>
+      <input id="adminPw" type="password" placeholder="Kata sandi admin" autocomplete="off">
+      <button id="btnAdminLogin" class="btn big primary">🔓 Masuk</button>
+      <p class="hint">Kata sandi bawaan: <b>admin123</b> (bisa diubah di bawah setelah masuk)</p>
+    </div>
+
+    <div id="adminMain" class="hidden">
+      <div class="admin-tools">
+        <button id="btnQAdd" class="btn primary sm">➕ Soal Baru</button>
+        <span id="qCount" class="chip">0 soal</span>
+        <button id="btnAdminOut" class="btn ghost sm" style="margin-left:auto">Keluar</button>
+      </div>
+      <div id="qList" class="pane qlist"></div>
+      <button id="btnAdminPw" class="link">🔑 Ubah kata sandi admin</button>
+    </div>
+  </section>
+
+  <!-- ================= HASIL ================= -->
+  <section class="screen screen-dark" id="scr-result">
+    <div class="result-card">
+      <div id="resEmoji" class="res-emoji">🏆</div>
+      <h2 id="resTitle">Luar Biasa!</h2>
+      <p id="resSub"></p>
+      <div class="stats">
+        <div class="stat"><b id="resScore">0</b><span>Skor</span></div>
+        <div class="stat"><b id="resStage">0</b><span>Level</span></div>
+        <div class="stat"><b id="resCoins">0</b><span>Koin</span></div>
+        <div class="stat"><b id="resRank">—</b><span>Papan Skor</span></div>
+      </div>
+      <button id="btnAgain" class="btn big primary">🔁 Main Lagi</button>
+      <button id="btnHome" class="btn big ghost">🏠 Beranda</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ================= OVERLAY: BANNER LEVEL ================= -->
+<div id="banner" aria-hidden="true">
+  <div class="btitle" id="bTitle"></div>
+  <div class="bsub" id="bSub"></div>
+</div>
+
+<!-- ================= OVERLAY: SOAL ================= -->
+<div id="qmodal" class="modal hidden">
+  <div class="mcard qcard">
+    <div class="qtop">
+      <span id="qcat" class="cat">Budaya</span>
+      <span id="qdiff" class="qdiff">★★☆</span>
+      <div class="qtimer">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="17" fill="none" stroke="#E4ECF5" stroke-width="5"/>
+          <circle id="qring" cx="22" cy="22" r="17" fill="none" stroke="#0E7C86" stroke-width="5"
+                  stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="0"/>
+        </svg>
+        <span class="num" id="qtl">20</span>
+      </div>
+    </div>
+    <h3 id="qtext"></h3>
+    <div id="qopts" class="qopts"></div>
+    <div id="qexpl" class="qexpl hidden"></div>
+    <button id="qnext" class="btn big primary hidden">Lanjut ▶</button>
+  </div>
+</div>
+
+<!-- ================= OVERLAY: JEDA ================= -->
+<div id="pauseov" class="modal hidden">
+  <div class="mcard pcard">
+    <h3 class="ptitle">⏸ Jeda</h3>
+    <p class="psub" id="pauseInfo"></p>
+    <button id="btnResumeGame" class="btn big primary">▶️ Lanjut Bermain</button>
+    <button id="btnRestartStage" class="btn big ghost">🔄 Ulangi Level Ini</button>
+    <button id="btnExitSave" class="btn big ghost">💾 Simpan &amp; Keluar</button>
+  </div>
+</div>
+
+<!-- ================= OVERLAY: FORM SOAL (ADMIN) ================= -->
+<div id="qForm" class="modal hidden">
+  <div class="mcard pane">
+    <h3 class="ftitle" id="qfTitle">➕ Soal Baru</h3>
+    <div class="opts-grid">
+      <div class="field">
+        <label>Kategori</label>
+        <select id="qfCat">
+          <option>Sejarah</option>
+          <option>Kearifan Lokal</option>
+          <option>Budaya</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tingkat</label>
+        <select id="qfDiff">
+          <option value="1">★ Mudah</option>
+          <option value="2">★★ Sedang</option>
+          <option value="3">★★★ Sulit</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Pertanyaan</label>
+      <textarea id="qfQ" rows="2" placeholder="Tulis pertanyaan di sini..."></textarea>
+    </div>
+    <div class="opts-grid">
+      <div class="field"><label>Pilihan A</label><input id="qfA" type="text"></div>
+      <div class="field"><label>Pilihan B</label><input id="qfB" type="text"></div>
+      <div class="field"><label>Pilihan C</label><input id="qfC" type="text"></div>
+      <div class="field"><label>Pilihan D</label><input id="qfD" type="text"></div>
+    </div>
+    <div class="field">
+      <label>Jawaban Benar</label>
+      <div class="ans-row" id="qfAns">
+        <label class="sel"><input type="radio" name="qfAns" value="0" checked><b>A</b></label>
+        <label><input type="radio" name="qfAns" value="1"><b>B</b></label>
+        <label><input type="radio" name="qfAns" value="2"><b>C</b></label>
+        <label><input type="radio" name="qfAns" value="3"><b>D</b></label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Penjelasan <small>(opsional, tampil setelah jawaban)</small></label>
+      <textarea id="qfExpl" rows="2" placeholder="Contoh: Candi Pari terletak di Kecamatan Porong..."></textarea>
+    </div>
+    <div class="row">
+      <button id="qfSave" class="btn primary">💾 Simpan</button>
+      <button id="qfCancel" class="btn ghost">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= OVERLAY: UBAH SANDI ================= -->
+<div id="pwForm" class="modal hidden">
+  <div class="mcard pane">
+    <h3 class="ftitle">🔑 Ubah Kata Sandi Admin</h3>
+    <div class="field"><label>Sandi lama</label><input id="pwOld" type="password"></div>
+    <div class="field"><label>Sandi baru</label><input id="pwNew" type="password"></div>
+    <div class="field"><label>Ulangi sandi baru</label><input id="pwNew2" type="password"></div>
+    <div class="row">
+      <button id="pwSave" class="btn primary">💾 Simpan</button>
+      <button id="pwCancel" class="btn ghost">Batal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= OVERLAY: KONFIRMASI ================= -->
+<div id="confirmBox" class="modal hidden">
+  <div class="mcard ccard">
+    <p id="confMsg" class="cmsg"></p>
+    <div class="row">
+      <button id="confOk" class="btn primary">Ya, lanjutkan</button>
+      <button id="confCancel" class="btn ghost">Batal</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="toast" aria-live="polite"></div>
+
+<script src="/static/js/audio.js"></script>
+<script src="/static/js/game.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
