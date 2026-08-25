@@ -105,6 +105,7 @@ const Game = {
   timeMax: 50, timeLeft: 50,
   state: 'idle', paused: false,
   invuln: 0, holdDir: null, _holdUntil: 0, _pressed: new Set(), _pressT: 0,
+  _tapDebt: 0,
   playerAcc: 0, popups: [], _flash: 0, _lastSec: 99,
   STEP: 0.14,
   cb: {},
@@ -172,6 +173,7 @@ const Game = {
     this._flash = 0;
     this._lastSec = this.timeLeft;
     this.holdDir = null;
+    this._tapDebt = 0;
     this.state = 'playing';
     this.paused = false;
   },
@@ -179,25 +181,39 @@ const Game = {
   /* input arah:
      press/release = tombol D-pad / keyboard (tahan = jalan terus)
      queueStep     = usap di labirin (1 arah per usapan)
-     Ketukan singkat tetap menghasilkan 1 langkah (TAP_GRACE). */
+     ANTRIAN LANGKAH (_tapDebt): setiap ketukan "berutang" 1 langkah.
+     Ketukan cepat berturut-turut mengurung langkah di antrian sehingga
+     tidak ada ketukan yang hilang; pemain baru berhenti setelah seluruh
+     utang langkah terselesaikan (atau ketemu dinding). */
   press(d) {
     if (this.state !== 'playing' || this.paused) return;
-    if (this._pressed.size === 0) this._pressT = performance.now();
+    const now = performance.now();
+    if (this._pressed.size === 0) this._pressT = now;
+    this._tapDebt += 1;
+    this._holdUntil = now + 160 * this._tapDebt + 80;
     this._pressed.add(d);
     this.holdDir = d;
   },
   release(d) {
     this._pressed.delete(d);
     if (this._pressed.size === 0 && this.holdDir) {
-      const now = performance.now();
-      const dur = now - (this._pressT || now);
-      // ketukan singkat (<280ms) = selesaikan 1 langkah;
-      // lepas setelah tahan lama = berhenti segera
-      this._holdUntil = dur < 280 ? now + 220 : now;
+      const dur = performance.now() - (this._pressT || performance.now());
+      if (dur >= 280) {
+        // tahan lama lalu lepas = berhenti segera, utang lunas
+        this._tapDebt = 0;
+        this._holdUntil = performance.now();
+      }
+      // ketukan singkat: antrian langkah diselesaikan oleh grace (di atas)
     }
+  },
+  _stopTap() {
+    this._tapDebt = 0;
+    this.holdDir = null;
+    this._holdUntil = 0;
   },
   queueStep(d) {
     if (this.state !== 'playing' || this.paused) return;
+    this._tapDebt = 0; // usapan punya aturannya sendiri
     this.holdDir = d;
     this._holdUntil = performance.now() + 260;
   },
@@ -218,7 +234,16 @@ const Game = {
       let guardN = 0;
       while (this.playerAcc >= this.STEP && this.state === 'playing' && guardN++ < 4) {
         this.playerAcc -= this.STEP;
-        if (!this.tryMove(this.holdDir)) { this.playerAcc = 0; break; }
+        if (!this.tryMove(this.holdDir)) {
+          this.playerAcc = 0;
+          if (this._tapDebt > 0 && this._pressed.size === 0) this._stopTap();
+          break; // ketuk mentok dinding
+        }
+        if (this._pressed.size === 0 && this._tapDebt > 0) {
+          this._tapDebt--;
+          if (this._tapDebt === 0) this._stopTap(); // antrian ketuk lunas
+        }
+        if (this.state !== 'playing') break; // langkah itu membuka portal
       }
     } else this.playerAcc = 0;
 
@@ -544,6 +569,7 @@ function _loop(t) {
       Game.holdDir = [...Game._pressed].pop();
     } else if (Game.holdDir && t > Game._holdUntil) {
       Game.holdDir = null;
+      if (Game._pressed.size === 0) Game._tapDebt = 0;
     }
   }
   const scr = (typeof App !== 'undefined') ? App.activeScreen : null;

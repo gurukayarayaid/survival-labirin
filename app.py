@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 GAME SURVIVAL LABIRIN
-SD Negeri Semambung Jabon Sidorjo — dibuat untuk murid SD.
+SD Negeri Semambung Jabon Sidoarjo — dibuat untuk murid SD.
 
 Backend Python (Flask):
   - CRUD soal (menu admin, login kata sandi)
@@ -206,7 +206,7 @@ def _default_data():
         "sessions": {},
         "leaderboard": [],
         "admin_password": ADMIN_PASSWORD_DEFAULT,
-        "school": "SD Negeri Semambung Jabon Sidorjo",
+        "school": "SD Negeri Semambung Jabon Sidoarjo",
     }
 
 

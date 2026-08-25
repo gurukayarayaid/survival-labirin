@@ -4,7 +4,7 @@ Game edukasi **survival labirin** untuk murid SD. Dibangun dengan **Python (Flas
 sebagai backend + HTML5/CSS/JS sebagai frontend — dijalankan langsung di **browser HP
 Android**, tanpa instal aplikasi.
 
-> Dibuat untuk: **SD NEGERI SEMAMBUNG JABON SIDAORJO**
+> Dibuat untuk: **SD NEGERI SEMAMBUNG JABON SIDOARJO**
 > Guru: **AGUK RUDIANTO, S.Pd.**
 
 ---
@@ -14,7 +14,7 @@ Android**, tanpa instal aplikasi.
 | Fitur | Keterangan |
 |---|---|
 | 🏃 Survival labirin | 6 level makin besar: kumpulkan koin 🪙, hindari monster 👾, cari gerbang 🌀 sebelum waktu habis |
-| 🧠 Soal Sidorjo | Tiap level lolos harus menjawab soal **sejarah, kearifan lokal & budaya** masyarakat Sidoarjo (30 soal bawaan, bisa ditambah guru) |
+| 🧠 Soal Sidoarjo | Tiap level lolos harus menjawab soal **sejarah, kearifan lokal & budaya** masyarakat Sidoarjo (30 soal bawaan, bisa ditambah guru) |
 | 💾 Simpan sesi otomatis | Progres (level, nyawa, skor, koin) tersimpan per nama. Masuk lagi dengan nama yang sama → **Lanjutkan** |
 | 🏆 Papan skor | 10 besar skor tertinggi, medali 🥇🥈🥉, tanda bagi yang menyelesaikan semua level |
 | 🛠️ Admin guru | Login → **tambah / edit / coba / hapus** soal, ubah kata sandi |

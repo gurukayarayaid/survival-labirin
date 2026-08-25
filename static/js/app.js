@@ -600,7 +600,7 @@ function showResult(win) {
   $('#resEmoji').textContent = win ? '🏆' : '💪';
   $('#resTitle').textContent = win ? 'Luar Biasa!' : 'Belum Berhasil!';
   $('#resSub').textContent = win
-    ? 'Hebat, ' + App.name + '! Kamu lolos semua labirin dan jadi pahlawan Sidorjo! 🎊'
+    ? 'Hebat, ' + App.name + '! Kamu lolos semua labirin dan jadi pahlawan Sidoarjo! 🎊'
     : 'Jangan menyerah, ' + App.name + '! Coba lagi, kamu pasti bisa!';
   $('#resScore').textContent = String(score);
   $('#resStage').textContent = stage + '/' + MAX_STAGE;
@@ -895,11 +895,19 @@ function bindGameInput() {
     ArrowLeft: 'w', KeyA: 'w',
     ArrowRight: 'e', KeyD: 'e',
   };
+  // saat fokus di kolom input (nama murid, form admin) biarkan ketikan normal —
+  // W/A/S/D & panah jangan ikut memicu tombol game
+  const isTyping = e => {
+    const t = e.target;
+    return !!(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable));
+  };
   window.addEventListener('keydown', e => {
+    if (isTyping(e)) return;
     const d = km[e.code];
     if (d) { e.preventDefault(); Game.press(d); }
   });
   window.addEventListener('keyup', e => {
+    if (isTyping(e)) return;
     const d = km[e.code];
     if (d) Game.release(d);
   });
